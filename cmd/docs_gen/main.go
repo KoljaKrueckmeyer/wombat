@@ -35,6 +35,18 @@ import (
 var Version = "0.0.1"
 var DateBuilt = "1970-01-01T00:00:00Z"
 
+// these processor components contain curly brackets that doc generation can't filter out
+// there are curly brackets in code examples that shouldn't be escaped.
+// skipping these for now. 
+var skipComponents = map[string]bool{
+	"aws_bedrock_chat":        true,
+	"cohere_chat":             true,
+	"gcp_vertex_ai_chat":      true,
+	"gcp_vertex_ai_embeddings": true,
+	"ollama_chat":             true,
+	"openai_chat_completion":  true,
+}
+
 //go:embed templates/bloblang_functions.mdx.tmpl
 var templateBloblFunctionsRaw string
 
@@ -110,7 +122,9 @@ func getSchema() *service.ConfigSchema {
 func collectComponentNames(env *service.Environment, walker func(func(string, *service.ConfigView))) []string {
 	names := []string{}
 	walker(func(name string, _ *service.ConfigView) {
-		names = append(names, name)
+		if !skipComponents[name] {
+			names = append(names, name)
+		}
 	})
 	return names
 }
@@ -235,6 +249,9 @@ func main() {
 
 func viewForDir(docsDir string) func(string, *service.ConfigView) {
 	return func(name string, view *service.ConfigView) {
+		if skipComponents[name] {
+			return
+		}
 		data, err := view.TemplateData()
 		if err != nil {
 			panic(fmt.Sprintf("Failed to prepare docs for '%v': %v", name, err))
