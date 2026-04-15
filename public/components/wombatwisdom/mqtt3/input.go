@@ -12,24 +12,25 @@ import (
 )
 
 const (
-	fldUrls                 = "urls"
-	fldClientID             = "client_id"
-	fldFilters              = "filters"
-	fldCleanSession         = "clean_session"
-	fldConnectTimeout       = "connect_timeout"
-	fldConnectRetry         = "connect_retry"
-	fldConnectRetryInterval = "connect_retry_interval"
-	fldKeepalive            = "keepalive"
-	fldAuth                 = "auth"
-	fldTLS                  = "tls"
-	fldWill                 = "will"
-	fldEnableAutoAck        = "enable_auto_ack"
-	fldUsername             = "username"
-	fldPassword             = "password"
-	fldTopic                = "topic"
-	fldPayload              = "payload"
-	fldQOS                  = "qos"
-	fldRetained             = "retained"
+	fldUrls                      = "urls"
+	fldClientID                  = "client_id"
+	fldFilters                   = "filters"
+	fldCleanSession              = "clean_session"
+	fldConnectTimeout            = "connect_timeout"
+	fldConnectRetry              = "connect_retry"
+	fldConnectRetryInterval      = "connect_retry_interval"
+	fldKeepalive                 = "keepalive"
+	fldAuth                      = "auth"
+	fldTLS                       = "tls"
+	fldWill                      = "will"
+	fldEnableAutoAck             = "enable_auto_ack"
+	fldSessionStabilizationDelay = "session_stabilization_delay"
+	fldUsername                  = "username"
+	fldPassword                  = "password"
+	fldTopic                     = "topic"
+	fldPayload                   = "payload"
+	fldQOS                       = "qos"
+	fldRetained                  = "retained"
 )
 
 func inputConfig() *service.ConfigSpec {
@@ -118,6 +119,10 @@ input:
 		Field(service.NewBoolField(fldEnableAutoAck).
 			Description("Enable automatic acknowledgment (paho SetAutoAckDisabled). When false (default), messages are ACK'd after processing (at-least-once). When true, messages are ACK'd immediately (at-most-once with higher throughput but message loss risk).").
 			Default(false).
+			Advanced()).
+		Field(service.NewDurationField(fldSessionStabilizationDelay).
+			Description("Optional delay after connection before subscribing to topics. This ensures broker-side session state is fully initialized, which is particularly important for Apache Artemis/Red Hat AMQ brokers to properly enforce address-level policies (max-size-bytes, max-size-messages). Recommended value for Artemis: 100ms-500ms.").
+			Optional().
 			Advanced())
 }
 
@@ -191,6 +196,15 @@ func newInput(conf *service.ParsedConfig, mgr *service.Resources) (service.Batch
 			return nil, fmt.Errorf("failed to parse %s: %w", fldEnableAutoAck, err)
 		}
 		inputConfig.EnableAutoAck = enableAutoAck
+	}
+
+	// Extract session stabilization delay if provided
+	if conf.Contains(fldSessionStabilizationDelay) {
+		delay, err := conf.FieldDuration(fldSessionStabilizationDelay)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", fldSessionStabilizationDelay, err)
+		}
+		inputConfig.SessionStabilizationDelay = &delay
 	}
 
 	// Handle auth if provided

@@ -475,3 +475,5 @@ require (
 	modernc.org/sqlite v1.39.1 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
 )
+
+replace github.com/wombatwisdom/components => ../components
