@@ -1,0 +1,20 @@
+FROM busybox
+
+LABEL maintainer="Daan Gerits <daan@shono.io>"
+LABEL org.opencontainers.image.source="https://github.com/wombatwisdom/wombat"
+LABEL version="v1.0.8-rc2-pcs"
+
+WORKDIR /
+
+# Create wombat user
+RUN adduser -u 10001 -D wombat
+
+# Copy pre-built binary
+COPY target/bin/wombat-linux-amd64 /wombat
+RUN chmod +x /wombat
+
+USER wombat
+
+EXPOSE 4195
+
+ENTRYPOINT ["/wombat"]
